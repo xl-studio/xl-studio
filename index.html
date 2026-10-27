@@ -1,0 +1,958 @@
+<html><head><meta charset="utf-8"><style>
+  :root {
+    --u: min(100vw / 1920, 100vh / 1080, 1px);
+    --bg-1: #17181a;
+    --bg-2: #212226;
+    --ink: #f2f2f0;
+    --ink-60: #a5a29c;
+    --ink-40: #7c7975;
+    --signal: #ff5722;
+    --signal-ink: #17181a;
+    --line: #38383a;
+    --font-display: "Archivo Black", "Arial Black", "Helvetica Neue", "PingFang SC", sans-serif;
+    --font-body: "Space Grotesk", "Helvetica Neue", "PingFang SC", sans-serif;
+    --font-mono: "Space Mono", "SF Mono", Menlo, monospace;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { background: var(--bg-1); }
+
+  .deck-viewport {
+    min-height: 100vh;
+    background:
+      radial-gradient(calc(1100 * var(--u)) calc(700 * var(--u)) at 82% 10%, rgba(255, 87, 34, 0.10), transparent 62%),
+      radial-gradient(calc(900 * var(--u)) calc(640 * var(--u)) at 10% 88%, rgba(255, 87, 34, 0.06), transparent 60%),
+      linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+  }
+  .deck-stage { display: block; }
+
+  .slide {
+    position: relative;
+    width: calc(1920 * var(--u));
+    min-height: max(calc(1080 * var(--u)), 100vh);
+    margin: 0 auto;
+    padding: calc(76 * var(--u)) calc(96 * var(--u));
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* ---------- 页眉页脚 ---------- */
+  .crumb {
+    position: absolute;
+    top: calc(54 * var(--u));
+    left: calc(96 * var(--u));
+    right: calc(96 * var(--u));
+    display: flex;
+    gap: calc(30 * var(--u));
+    font-family: var(--font-mono);
+    font-size: calc(16 * var(--u));
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .crumb span { color: var(--ink-40); }
+  .crumb span.on { color: var(--signal); }
+
+  .slide-meta {
+    position: absolute;
+    bottom: calc(48 * var(--u));
+    left: calc(96 * var(--u));
+    right: calc(96 * var(--u));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: calc(15 * var(--u));
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-40);
+  }
+  .slide-meta .pageno b {
+    font-family: var(--font-display);
+    font-size: calc(21 * var(--u));
+    color: var(--ink);
+    letter-spacing: 0.04em;
+  }
+
+  /* ---------- 排版层级 ---------- */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(18 * var(--u));
+    font-family: var(--font-mono);
+    font-size: calc(20 * var(--u));
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--signal);
+    margin-bottom: calc(36 * var(--u));
+  }
+  .eyebrow::before {
+    content: "";
+    width: calc(56 * var(--u));
+    height: calc(4 * var(--u));
+    background: var(--signal);
+    flex: none;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: calc(108 * var(--u));
+    line-height: 1.04;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  h1 .out { color: var(--signal); }
+  h2 {
+    font-family: var(--font-display);
+    font-size: calc(70 * var(--u));
+    line-height: 1.14;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    text-wrap: balance;
+    max-width: 20em;
+  }
+  .sub {
+    font-family: var(--font-body);
+    font-size: calc(30 * var(--u));
+    line-height: 1.58;
+    color: var(--ink-60);
+    max-width: 32em;
+    margin-top: calc(32 * var(--u));
+    text-wrap: pretty;
+  }
+
+  .bignum {
+    font-family: var(--font-display);
+    font-size: calc(300 * var(--u));
+    line-height: 0.86;
+    color: transparent;
+    -webkit-text-stroke: calc(3 * var(--u)) var(--signal);
+    user-select: none;
+  }
+
+  /* ---------- 封面 ---------- */
+  .conf {
+    font-family: var(--font-mono);
+    font-size: calc(21 * var(--u));
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-60);
+    margin-bottom: calc(48 * var(--u));
+    display: flex;
+    align-items: center;
+    gap: calc(20 * var(--u));
+  }
+  .conf i {
+    width: calc(13 * var(--u));
+    height: calc(13 * var(--u));
+    background: var(--signal);
+    display: inline-block;
+    flex: none;
+  }
+  .speakers {
+    display: flex;
+    gap: calc(64 * var(--u));
+    margin-top: calc(62 * var(--u));
+    font-family: var(--font-mono);
+    font-size: calc(19 * var(--u));
+    letter-spacing: 0.1em;
+    color: var(--ink-40);
+    line-height: 1.95;
+  }
+  .speakers b {
+    display: block;
+    font-family: var(--font-body);
+    font-size: calc(28 * var(--u));
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    font-weight: 700;
+    margin-bottom: calc(8 * var(--u));
+  }
+
+  /* ---------- 卡片网格 ---------- */
+  .cardgrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: calc(38 * var(--u));
+    margin-top: calc(56 * var(--u));
+  }
+  .sig-card {
+    background: var(--bg-2);
+    border: calc(2 * var(--u)) solid var(--line);
+    padding: calc(42 * var(--u)) calc(38 * var(--u)) calc(38 * var(--u));
+    transition: transform 0.35s var(--ease-out-expo), border-color 0.35s;
+  }
+  .sig-card:hover { transform: translateY(calc(-8 * var(--u))); border-color: var(--signal); }
+  .sig-card .idx {
+    font-family: var(--font-display);
+    font-size: calc(52 * var(--u));
+    line-height: 1;
+    color: var(--signal);
+    margin-bottom: calc(24 * var(--u));
+  }
+  .sig-card h3 {
+    font-family: var(--font-body);
+    font-size: calc(33 * var(--u));
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: calc(16 * var(--u));
+  }
+  .sig-card p {
+    font-family: var(--font-body);
+    font-size: calc(23 * var(--u));
+    line-height: 1.65;
+    color: var(--ink-60);
+    text-wrap: pretty;
+  }
+  .sig-card.focal { background: var(--signal); border-color: var(--signal); }
+  .sig-card.focal .idx { color: transparent; -webkit-text-stroke: calc(2 * var(--u)) var(--signal-ink); }
+  .sig-card.focal h3, .sig-card.focal p { color: var(--signal-ink); }
+
+  /* ---------- 数据页 ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: calc(44 * var(--u));
+    margin-top: calc(64 * var(--u));
+  }
+  .stat { border-top: calc(3 * var(--u)) solid var(--signal); padding-top: calc(32 * var(--u)); }
+  .stat .n {
+    font-family: var(--font-display);
+    font-size: calc(140 * var(--u));
+    line-height: 0.94;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .n em { font-style: normal; color: var(--signal); font-size: calc(84 * var(--u)); }
+  .stat .l {
+    font-family: var(--font-body);
+    font-size: calc(24 * var(--u));
+    line-height: 1.6;
+    color: var(--ink-60);
+    margin-top: calc(18 * var(--u));
+    max-width: 13em;
+  }
+
+  /* ---------- 经历条目列表 ---------- */
+  .worklist { margin-top: calc(42 * var(--u)); max-width: calc(1620 * var(--u)); }
+  .worklist .row {
+    display: grid;
+    grid-template-columns: calc(84 * var(--u)) 1fr;
+    gap: calc(34 * var(--u));
+    padding: calc(26 * var(--u)) 0;
+    border-bottom: calc(1.5 * var(--u)) solid var(--line);
+  }
+  .worklist .row:first-child { border-top: calc(1.5 * var(--u)) solid var(--line); }
+  .worklist .no {
+    font-family: var(--font-display);
+    font-size: calc(32 * var(--u));
+    color: var(--signal);
+    line-height: 1.3;
+  }
+  .worklist h3 {
+    font-family: var(--font-body);
+    font-size: calc(32 * var(--u));
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0.01em;
+    margin-bottom: calc(10 * var(--u));
+  }
+  .worklist p {
+    font-family: var(--font-body);
+    font-size: calc(23 * var(--u));
+    line-height: 1.62;
+    color: var(--ink-60);
+    text-wrap: pretty;
+  }
+
+  /* ---------- 议程式行 ---------- */
+  .agenda { margin-top: calc(50 * var(--u)); max-width: calc(1600 * var(--u)); }
+  .agenda .row {
+    display: grid;
+    grid-template-columns: calc(130 * var(--u)) 1fr auto;
+    align-items: baseline;
+    gap: calc(40 * var(--u));
+    padding: calc(34 * var(--u)) calc(8 * var(--u));
+    border-bottom: calc(2 * var(--u)) solid var(--line);
+    transition: background 0.3s, padding-left 0.3s var(--ease-out-expo);
+  }
+  .agenda .row:first-child { border-top: calc(2 * var(--u)) solid var(--line); }
+  .agenda .row:hover { background: rgba(255, 87, 34, 0.07); padding-left: calc(26 * var(--u)); }
+  .agenda .no { font-family: var(--font-display); font-size: calc(44 * var(--u)); color: var(--signal); }
+  .agenda .t {
+    font-family: var(--font-body);
+    font-size: calc(36 * var(--u));
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0.01em;
+  }
+  .agenda .d {
+    font-family: var(--font-mono);
+    font-size: calc(17 * var(--u));
+    letter-spacing: 0.16em;
+    color: var(--ink-40);
+    white-space: nowrap;
+  }
+
+  /* ---------- 两栏面板 ---------- */
+  .twocol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: calc(38 * var(--u));
+    margin-top: calc(50 * var(--u));
+  }
+  .panel {
+    background: var(--bg-2);
+    border: calc(2 * var(--u)) solid var(--line);
+    padding: calc(46 * var(--u));
+  }
+  .panel.hot { background: var(--signal); border-color: var(--signal); }
+  .panel .p-label {
+    font-family: var(--font-mono);
+    font-size: calc(17 * var(--u));
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-40);
+    margin-bottom: calc(24 * var(--u));
+  }
+  .panel.hot .p-label { color: rgba(23, 24, 26, 0.7); }
+  .panel h3 {
+    font-family: var(--font-body);
+    font-size: calc(38 * var(--u));
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.35;
+  }
+  .panel.hot h3 { color: var(--signal-ink); }
+  .panel .when {
+    font-family: var(--font-mono);
+    font-size: calc(18 * var(--u));
+    letter-spacing: 0.14em;
+    color: var(--ink-40);
+    margin-top: calc(10 * var(--u));
+  }
+  .panel.hot .when { color: rgba(23, 24, 26, 0.72); }
+  .panel ul { list-style: none; margin-top: calc(28 * var(--u)); }
+  .panel li {
+    position: relative;
+    font-family: var(--font-body);
+    font-size: calc(23 * var(--u));
+    line-height: 1.62;
+    color: var(--ink-60);
+    padding: calc(13 * var(--u)) 0 calc(13 * var(--u)) calc(38 * var(--u));
+    border-bottom: calc(1.5 * var(--u)) solid rgba(128, 128, 128, 0.2);
+  }
+  .panel li:last-child { border-bottom: none; }
+  .panel li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: calc(28 * var(--u));
+    width: calc(18 * var(--u));
+    height: calc(4 * var(--u));
+    background: var(--signal);
+  }
+  .panel.hot li { color: var(--signal-ink); border-bottom-color: rgba(23, 24, 26, 0.22); }
+  .panel.hot li::before { background: var(--signal-ink); }
+
+  /* ---------- 技能详情页 ---------- */
+  .skill-body {
+    display: grid;
+    grid-template-columns: calc(700 * var(--u)) 1fr;
+    gap: calc(60 * var(--u));
+    align-items: stretch;
+    margin-top: calc(34 * var(--u));
+  }
+  .skill-slide h2 { font-size: calc(62 * var(--u)); }
+  .skill-text p {
+    font-family: var(--font-body);
+    font-size: calc(26 * var(--u));
+    line-height: 1.66;
+    color: var(--ink-60);
+    text-wrap: pretty;
+  }
+  .skill-text ul { list-style: none; margin-top: calc(26 * var(--u)); }
+  .skill-text li {
+    position: relative;
+    font-family: var(--font-body);
+    font-size: calc(23 * var(--u));
+    line-height: 1.6;
+    color: var(--ink-60);
+    padding: calc(14 * var(--u)) 0 calc(14 * var(--u)) calc(40 * var(--u));
+    border-bottom: calc(1.5 * var(--u)) solid rgba(128, 128, 128, 0.2);
+  }
+  .skill-text li:last-child { border-bottom: none; }
+  .skill-text li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: calc(29 * var(--u));
+    width: calc(20 * var(--u));
+    height: calc(4 * var(--u));
+    background: var(--signal);
+  }
+
+  /* ---------- 可替换图片位 ---------- */
+  .imgslot {
+    position: relative;
+    min-height: calc(540 * var(--u));
+    border: calc(2 * var(--u)) dashed var(--line);
+    background:
+      repeating-linear-gradient(135deg, rgba(242, 242, 240, 0.05) 0 calc(2 * var(--u)), transparent calc(2 * var(--u)) calc(24 * var(--u))),
+      linear-gradient(160deg, rgba(255, 87, 34, 0.10), rgba(33, 34, 38, 0.55));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: calc(16 * var(--u));
+    overflow: hidden;
+  }
+  .imgslot .corner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(72 * var(--u));
+    height: calc(6 * var(--u));
+    background: var(--signal);
+  }
+  .imgslot .tag {
+    font-family: var(--font-mono);
+    font-size: calc(19 * var(--u));
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--ink-60);
+  }
+  .imgslot .hint {
+    font-family: var(--font-body);
+    font-size: calc(21 * var(--u));
+    color: var(--ink-40);
+    letter-spacing: 0.04em;
+  }
+  .imgslot .frame {
+    position: absolute;
+    right: calc(28 * var(--u));
+    bottom: calc(24 * var(--u));
+    font-family: var(--font-mono);
+    font-size: calc(15 * var(--u));
+    letter-spacing: 0.18em;
+    color: var(--ink-40);
+  }
+
+  /* ---------- 结尾 ---------- */
+  .end-slide h2 { font-size: calc(132 * var(--u)); line-height: 1.08; }
+  .end-slide h2 .out { color: var(--signal); }
+  .contact {
+    display: flex;
+    gap: calc(24 * var(--u));
+    margin-top: calc(64 * var(--u));
+    flex-wrap: wrap;
+  }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: calc(20 * var(--u));
+    letter-spacing: 0.14em;
+    color: var(--ink);
+    border: calc(2 * var(--u)) solid var(--line);
+    padding: calc(18 * var(--u)) calc(38 * var(--u));
+    transition: all 0.3s var(--ease-out-expo);
+  }
+  .chip.hot { background: var(--signal); border-color: var(--signal); color: var(--signal-ink); }
+  .chip:hover { border-color: var(--signal); transform: translateY(calc(-5 * var(--u))); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style></head><body><div class="deck-viewport" data-ink-id="ink-01a17816-cc00-7ef4-8e87-6faecebb0cc6">
+ <div class="deck-stage" data-ink-id="ink-01a17816-cc00-7aff-b178-a69b855854c2">
+  
+  <section class="slide" data-ink-id="ink-01a17816-cc00-7e6f-87cf-aea4766f3283">
+   <div class="crumb" data-ink-id="ink-01a17816-cc00-7d18-89ec-8ed567f07308">
+    <span class="on" data-ink-id="ink-01a17816-cc00-700b-a7fe-8c3aecebbbbd">Resume</span><span data-ink-id="ink-01a17816-cc00-7920-a7b1-4324dec34f74">Profile</span><span data-ink-id="ink-01a17816-cc00-71a3-8717-279b5f817b0d">Experience</span><span data-ink-id="ink-01a17816-cc00-71d4-90fb-1546657e3e21">Skills</span><span data-ink-id="ink-01a17816-cc00-71a8-bf6b-9970e3b43000">Contact</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc00-7e40-8c7a-1fd3df64cd31">
+    <div class="conf" data-ink-id="ink-01a17816-cc00-790e-82fb-de5e58d98b54">
+     <i data-ink-id="ink-01a17816-cc00-7fd6-b149-e6c2f22e8fec"></i>个人简历 · 新媒体运营 · 2026
+    </div>
+   </div>
+   <h1 data-ink-id="ink-01a17816-cc00-7a26-8439-7d42c31e3eac">把专业内容
+    <br>
+    写成<span class="out" data-ink-id="ink-01a17816-cc00-78f2-860e-c56ec7f2aa8a">大众故事</span></h1>
+   <p class="sub" data-ink-id="ink-01a17816-cc00-7dd7-8f0e-47cb1035fd41">11 年建筑行业内容与品牌经验，公众号 / 小红书 / 视频号全平台运营，从选题到数据复盘可独立完成。</p>
+   <div class="speakers" data-ink-id="ink-01a17816-cc00-709b-9adc-7f986e84c361">
+    <div data-ink-id="ink-01a17816-cc00-7cc9-9bd8-f6fe734ab8d6">
+     <b data-ink-id="ink-01a17816-cc00-79b8-93e2-90e64be1d118">A · 女 · 34 岁</b> 求职意向：新媒体运营专员
+    </div>
+    <div data-ink-id="ink-01a17816-cc00-75be-83a7-5fb7aada171a">
+     <b data-ink-id="ink-01a17816-cc00-74a1-b12d-e2cb1935e1e4">11 年</b> 建筑行业从业 · 设计 + 新媒体复合背景
+    </div>
+    <div data-ink-id="ink-01a17816-cc00-735b-93b1-29d4d086373f">
+     <b data-ink-id="ink-01a17816-cc00-7ae0-a609-62733ecaeb3a">电话 · 微信 · 邮箱</b> 面谈或投递时提供
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc00-7676-8f92-c7705a8369e4">
+    <span data-ink-id="ink-01a17816-cc00-7e86-952d-4dde9490598d">新媒体运营专员 · 求职简历</span><span class="pageno" data-ink-id="ink-01a17816-cc00-7ffe-8fc7-a93b301193ff"><b data-ink-id="ink-01a17816-cc00-7696-a349-425111863c33">01</b> / 16</span>
+   </div>
+  </section><section class="slide" data-ink-id="ink-01a17816-cc00-72b0-a6c7-493dd77afe39">
+   <div class="crumb" data-ink-id="ink-01a17816-cc00-7eab-a342-7964e08422c4">
+    <span data-ink-id="ink-01a17816-cc00-7d11-8edf-a2de24b4e45a">Resume</span><span class="on" data-ink-id="ink-01a17816-cc00-737d-b386-3bf116c5d671">Profile</span><span data-ink-id="ink-01a17816-cc00-7521-bb5a-397ab0dc8eb1">Experience</span><span data-ink-id="ink-01a17816-cc00-7eac-81b7-d47382d7e424">Skills</span><span data-ink-id="ink-01a17816-cc00-7a11-92b1-fa73d7bcbf64">Contact</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc00-7062-a115-1c4172bd40e3">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc00-7694-be79-68c16282b4d6">Profile · 个人优势</div>
+    <h2 data-ink-id="ink-01a17816-cc00-7997-85c8-541f70713b73">懂建筑的人不少，
+     <br>
+     懂怎么把建筑讲出去的人不多。</h2>
+    <p class="sub" data-ink-id="ink-01a17816-cc00-7479-85fa-2553a4665dc2">读得懂方案文本与学术内容，也写得出小红书标题和短视频脚本——专业底子在，表达方式可以换。</p>
+   </div>
+   <div class="cardgrid" data-ink-id="ink-01a17816-cc00-7cd9-9bef-a0825e5ab509">
+    <div class="sig-card" data-ink-id="ink-01a17816-cc00-713d-a628-608bcde26b1e">
+     <div class="idx" data-ink-id="ink-01a17816-cc00-7edf-9b26-7088994413ed">01</div>
+     <h3 data-ink-id="ink-01a17816-cc00-71ec-8ffa-8f25835b3859">行业理解力</h3>
+     <p data-ink-id="ink-01a17816-cc00-7fb3-ae24-19c8351148ab">11 年建筑设计从业，熟悉学术内容、行业活动与设计师群体的传播逻辑，不需要重新学一遍行业。</p>
+    </div>
+    <div class="sig-card focal" data-ink-id="ink-01a17816-cc00-70a0-9e10-9862ece6b8d6">
+     <div class="idx" data-ink-id="ink-01a17816-cc00-74c5-aa79-657d7d4d0297">02</div>
+     <h3 data-ink-id="ink-01a17816-cc00-7c8a-a881-3eb6aa7bb44b">全平台内容生产</h3>
+     <p data-ink-id="ink-01a17816-cc00-72bb-9173-09e718aacb6a">公众号、小红书、视频号的选题策划、原创图文、短视频制作与账号运营，可独立完成从选题到复盘。</p>
+    </div>
+    <div class="sig-card" data-ink-id="ink-01a17816-cc00-78b4-b070-ff90684848cf">
+     <div class="idx" data-ink-id="ink-01a17816-cc00-78a5-a797-0d7a89c89c66">03</div>
+     <h3 data-ink-id="ink-01a17816-cc00-7d10-8351-21365f11558b">资源与统筹</h3>
+     <p data-ink-id="ink-01a17816-cc00-7ba8-a459-f42be6c89f0d">对接行业协会、设计院与行业媒体；会务统筹、资料归档、多任务并行，细致严谨。</p>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc00-7a34-8f18-07a91596dcd8">
+    <span data-ink-id="ink-01a17816-cc00-7a46-abbe-7938481259f9">Profile · 个人优势</span><span class="pageno" data-ink-id="ink-01a17816-cc00-73c2-810a-e180f0761bff"><b data-ink-id="ink-01a17816-cc00-7707-8da4-5ef88828e54c">02</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide" data-ink-id="ink-01a17816-cc00-73f5-8a15-ae05ed33bf1e">
+   <div class="crumb" data-ink-id="ink-01a17816-cc00-79f4-830a-bc1ccc293c17">
+    <span data-ink-id="ink-01a17816-cc00-7b02-a681-cc44fd89967f">Resume</span><span class="on" data-ink-id="ink-01a17816-cc00-71e1-a6c2-16a1831ddfe4">Profile</span><span data-ink-id="ink-01a17816-cc00-7178-8f94-b729fc358f64">Experience</span><span data-ink-id="ink-01a17816-cc00-7103-a060-859c48f61675">Skills</span><span data-ink-id="ink-01a17816-cc00-750a-ab00-bbd0b014bcb2">Contact</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc00-77a8-a554-5b1c11e3e6b6">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc00-79c7-853a-61d60389c6f9">Numbers · 一年的部分成绩</div>
+    <h2 data-ink-id="ink-01a17816-cc00-79b2-aca8-856d616fce17">从 0 到 1，
+     <br>
+     用内容把账号做起来。</h2>
+   </div>
+   <div class="stats" data-ink-id="ink-01a17816-cc00-7809-ac69-5305b8139c05">
+    <div class="stat" data-ink-id="ink-01a17816-cc00-7a71-8486-1c3f20e91dc0">
+     <div class="n" data-ink-id="ink-01a17816-cc00-776c-9677-67ade439ea1c">
+      170<em data-ink-id="ink-01a17816-cc00-7a73-aee2-1fc0a30f1ec5">+</em>
+     </div>
+     <div class="l" data-ink-id="ink-01a17816-cc00-7a6d-87d9-b48b76b0c8ab">篇小红书原创笔记，两个账号累计产出</div>
+    </div>
+    <div class="stat" data-ink-id="ink-01a17816-cc00-75d5-b1b7-d1f3c4f65cd9">
+     <div class="n" data-ink-id="ink-01a17816-cc00-79a0-b6cd-13ab52a49d9a">
+      1w<em data-ink-id="ink-01a17816-cc00-73c1-9bd7-533f9301f75f">+</em>
+     </div>
+     <div class="l" data-ink-id="ink-01a17816-cc00-76fa-8e09-3a24a31a3849">账号 1 的涨粉量，保持稳定增长</div>
+    </div>
+    <div class="stat" data-ink-id="ink-01a17816-cc00-75ac-ba46-cccbfaef51f1">
+     <div class="n" data-ink-id="ink-01a17816-cc00-7081-abde-81921827fa66">
+      26w<em data-ink-id="ink-01a17816-cc00-7f25-bd1d-691e6a13bb7e">+</em>
+     </div>
+     <div class="l" data-ink-id="ink-01a17816-cc00-7882-bab9-83c2d6d1d48f">单篇最高浏览，同篇收藏 7.6w</div>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc00-7663-aba0-8449ab22a779">
+    <span data-ink-id="ink-01a17816-cc00-76db-9b27-0f054e835b7f">Numbers · 内容成果</span><span class="pageno" data-ink-id="ink-01a17816-cc00-7281-bdd2-a7b75b9c8776"><b data-ink-id="ink-01a17816-cc00-7bf5-98f5-ce77cd99afd5">03</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide" data-ink-id="ink-01a17816-cc00-761b-8903-fa97d00c18da">
+   <div class="crumb" data-ink-id="ink-01a17816-cc00-7b1c-be45-c3ec1a005f04">
+    <span data-ink-id="ink-01a17816-cc00-7e94-9431-59437aded8ba">Resume</span><span data-ink-id="ink-01a17816-cc00-76cc-a0eb-e00c3e289ed0">Profile</span><span class="on" data-ink-id="ink-01a17816-cc00-73ba-a300-32a07421e37e">Experience</span><span data-ink-id="ink-01a17816-cc00-787c-a788-53ac63d9d4da">Skills</span><span data-ink-id="ink-01a17816-cc00-7aef-9173-68d383da20e7">Contact</span>
+   </div>
+   <div style="margin-bottom: calc(18 * var(--u));" data-ink-id="ink-01a17816-cc00-7971-beb6-b1e158d76bd3">
+    <div class="bignum" data-ink-id="ink-01a17816-cc00-7d99-91a6-66c53a5556ff">01</div>
+   </div>
+   <div data-ink-id="ink-01a17816-cc00-7ee6-8820-4e4d6913acde">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc00-7d99-b26c-b47e637973a6">Part One · 工作经历</div>
+    <h2 data-ink-id="ink-01a17816-cc00-795e-b918-e3220d2bef4d">从画图到写字，
+     <br>
+     我把同一件事换了个说法。</h2>
+    <p class="sub" data-ink-id="ink-01a17816-cc00-7433-ab24-97b13a34049e">2015 年入行做景观设计，2019 年转入建筑设计院，2024 年转向品牌与新媒体——专业没变，表达方式变了。</p>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc00-78f3-aed6-2f07eb2327eb">
+    <span data-ink-id="ink-01a17816-cc00-7f5b-abb8-85c26d01eedd">Experience · 2015 — 至今</span><span class="pageno" data-ink-id="ink-01a17816-cc00-78d9-87d9-997ea8940d51"><b data-ink-id="ink-01a17816-cc00-775a-8d7e-f16c990ae7f4">04</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide" data-ink-id="ink-01a17816-cc00-7707-a4de-32a4fa316be9">
+   <div class="crumb" data-ink-id="ink-01a17816-cc00-7bb8-8565-4a267a055a54">
+    <span data-ink-id="ink-01a17816-cc00-7780-bfd9-1b9195bcd785">Resume</span><span data-ink-id="ink-01a17816-cc00-79ad-8284-d21cede48d69">Profile</span><span class="on" data-ink-id="ink-01a17816-cc00-78ac-aac3-457d92239c31">Experience</span><span data-ink-id="ink-01a17816-cc00-72ef-b7b2-ee66d7311313">Skills</span><span data-ink-id="ink-01a17816-cc00-7a4d-8c34-1cddb6f97fc5">Contact</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc00-7830-a4b7-e3a4126d6e34">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc00-7aaa-8569-e5da7a1bdc7f">2024.11 — 至今 · 上海潘冀建筑设计事务所 · 企划专员</div>
+    <h2 data-ink-id="ink-01a17816-cc00-754d-9b61-6da5f9da1404">品牌企划：
+     <br>
+     让专业内容被更多人读完。</h2>
+   </div>
+   <div class="worklist" data-ink-id="ink-01a17816-cc00-7ebb-94fb-81fba1be5be9">
+    <div class="row" data-ink-id="ink-01a17816-cc00-705b-b9de-af39708bf308">
+     <div class="no" data-ink-id="ink-01a17816-cc00-7be9-920b-cc4bace8a9f5">01</div>
+     <div data-ink-id="ink-01a17816-cc00-7a9b-888e-690155ba6b9e">
+      <h3 data-ink-id="ink-01a17816-cc00-7d02-8e1a-31db3378c9aa">新媒体内容运营</h3>
+      <p data-ink-id="ink-01a17816-cc00-7628-b065-34b80e35799c">负责官网、微信公众号的内容策划、选题与更新，撰写行业专题、项目案例与品牌活动新闻稿；按公众号、小红书等平台特性改写，把建筑专业内容转译为大众可读的传播内容，并完成排版、发布与数据复盘。</p>
+     </div>
+    </div>
+    <div class="row" data-ink-id="ink-01a17816-cc00-72e8-819e-f2af8c21ab11">
+     <div class="no" data-ink-id="ink-01a17816-cc00-79f3-a963-c5eefbb7495c">02</div>
+     <div data-ink-id="ink-01a17816-cc00-7b63-aba6-1ef7cf54fe21">
+      <h3 data-ink-id="ink-01a17816-cc00-70b0-af64-50c03089f577">品牌平台搭建</h3>
+      <p data-ink-id="ink-01a17816-cc00-7ff1-92c1-f037498b52df">搭建官网内容发布 SOP，负责账号日常运维；完成百度词条与营销账号从 0 到 1 搭建；策划「女建筑师」专题、年度影片等线上内容项目，统筹图文制作与宣发全流程。</p>
+     </div>
+    </div>
+    <div class="row" data-ink-id="ink-01a17816-cc00-7079-b227-8c0c7708c2ad">
+     <div class="no" data-ink-id="ink-01a17816-cc00-768c-9473-ed110b1a1beb">03</div>
+     <div data-ink-id="ink-01a17816-cc00-7214-bbae-b9bfe978f8c4">
+      <h3 data-ink-id="ink-01a17816-cc00-74ad-aaf1-ca33aea3e4bf">行业资源与活动策划</h3>
+      <p data-ink-id="ink-01a17816-cc00-72fc-a7f6-04d03125e135">对接上海勘协、建筑学会、Dezeen、地建师等行业协会与媒体平台，参与奖项申报、直播访谈、专题沙龙的前期筹备、现场协同与后期总结。</p>
+     </div>
+    </div>
+    <div class="row" data-ink-id="ink-01a17816-cc00-7a22-a3d2-eb1ead4c7148">
+     <div class="no" data-ink-id="ink-01a17816-cc00-7299-8d44-5a41ee168902">04</div>
+     <div data-ink-id="ink-01a17816-cc00-76fb-b2d5-6789226f26c2">
+      <h3 data-ink-id="ink-01a17816-cc00-7ea4-b58d-79827f67429f">综合文稿与资料管理</h3>
+      <p data-ink-id="ink-01a17816-cc00-7dc8-855b-ef862b84b883">撰写活动方案与总结汇报材料，统筹项目资料整理、归档与台账维护，跨部门协同推进品牌项目落地。</p>
+     </div>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc00-7465-a67f-1fec66eaf204">
+    <span data-ink-id="ink-01a17816-cc00-7a29-807c-c65cb6ce449c">Experience · 品牌企划</span><span class="pageno" data-ink-id="ink-01a17816-cc00-78c4-b769-1276a6640b28"><b data-ink-id="ink-01a17816-cc00-79f3-ae82-83dc5979a5bb">05</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide" data-ink-id="ink-01a17816-cc00-75af-8fe3-f3b0e3ea5b07">
+   <div class="crumb" data-ink-id="ink-01a17816-cc00-7fac-95cb-d0e9df235914">
+    <span data-ink-id="ink-01a17816-cc00-7d1e-ae84-e3eb962efdea">Resume</span><span data-ink-id="ink-01a17816-cc00-76f6-a574-c26d543dbfe7">Profile</span><span class="on" data-ink-id="ink-01a17816-cc00-7781-8464-d5d1869647aa">Experience</span><span data-ink-id="ink-01a17816-cc00-754b-bf87-5b80c73b5b13">Skills</span><span data-ink-id="ink-01a17816-cc00-78b1-be1c-922fa585a295">Contact</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc00-7bc0-ac2e-441a8f449899">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc00-7b30-b5b7-e0a45050e16f">2019.07 — 2023.12 · 上海中建建筑设计院（三院）· 建筑景观设计师</div>
+    <h2 data-ink-id="ink-01a17816-cc00-7f04-b794-1ce4177af5a4">设计院五年：
+     <br>
+     长文本与多方沟通的训练场。</h2>
+   </div>
+   <div class="worklist" data-ink-id="ink-01a17816-cc00-7974-be21-8bbf333a706a">
+    <div class="row" data-ink-id="ink-01a17816-cc00-7a8c-a362-39e4f63b071d">
+     <div class="no" data-ink-id="ink-01a17816-cc00-7f66-8a9a-65735318cb1a">01</div>
+     <div data-ink-id="ink-01a17816-cc00-7b68-88f5-bbe8ca2be98e">
+      <h3 data-ink-id="ink-01a17816-cc00-75fb-ba69-35bc30e84096">主创设计</h3>
+      <p data-ink-id="ink-01a17816-cc00-74fb-b386-d43ccddcb4c9">主创负责建筑规划与景观设计项目，研究行业前沿理念，撰写方案概念、设计说明与汇报文本，练出专业理解力与长文本写作功底。</p>
+     </div>
+    </div>
+    <div class="row" data-ink-id="ink-01a17816-cc00-79da-be55-5dc9a08512d0">
+     <div class="no" data-ink-id="ink-01a17816-cc00-7e7f-a90b-ceceb0af7728">02</div>
+     <div data-ink-id="ink-01a17816-cc00-709c-b6b2-fdbdf1b50f34">
+      <h3 data-ink-id="ink-01a17816-cc00-760a-885f-b1100b7eee29">汇报与对接</h3>
+      <p data-ink-id="ink-01a17816-cc00-7838-9129-1b163ab60726">独立完成方案汇报，同步甲方、施工方与团队信息，统筹项目资料的编制、校对与归档，多任务并行与会务汇报经验扎实。</p>
+     </div>
+    </div>
+    <div class="row" data-ink-id="ink-01a17816-cc01-77cc-9046-f785630069a2">
+     <div class="no" data-ink-id="ink-01a17816-cc01-7d37-9250-93e685f28f01">03</div>
+     <div data-ink-id="ink-01a17816-cc01-7335-bae0-621f66dbcdcf">
+      <h3 data-ink-id="ink-01a17816-cc01-71da-8645-7307cab2e35f">行业积累</h3>
+      <p data-ink-id="ink-01a17816-cc01-7480-b203-1a59f6e48209">持续对接多方主体、协同团队落地项目，熟悉设计院与行业机构的沟通方式，积累建筑行业资源与人脉。</p>
+     </div>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc01-7783-8f34-f99a0ed2090f">
+    <span data-ink-id="ink-01a17816-cc01-7755-a818-e8574c1e7654">Experience · 建筑设计</span><span class="pageno" data-ink-id="ink-01a17816-cc01-7dd1-8b33-b8588c46b040"><b data-ink-id="ink-01a17816-cc01-7869-9a9a-65c2ebfd240a">06</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide" data-ink-id="ink-01a17816-cc01-79d6-a0be-d47909bf60f5">
+   <div class="crumb" data-ink-id="ink-01a17816-cc01-7d95-90e1-7c8f644bac5e">
+    <span data-ink-id="ink-01a17816-cc01-7258-bc96-c050e688da9b">Resume</span><span data-ink-id="ink-01a17816-cc01-783e-a1e4-bf5401a9de0e">Profile</span><span class="on" data-ink-id="ink-01a17816-cc01-71d4-8cd3-dcf6bdeacee4">Experience</span><span data-ink-id="ink-01a17816-cc01-780f-8f52-e7178d441fb1">Skills</span><span data-ink-id="ink-01a17816-cc01-7523-a447-44adf56f5c8b">Contact</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc01-761a-80ef-72dedcb4f96d">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc01-7f36-b258-3ac3ecbb9519">Earlier · 更早的两段</div>
+    <h2 data-ink-id="ink-01a17816-cc01-78d4-b53e-e0079e61cc2a">设计是主线，
+     <br>
+     自媒体是从兴趣长出来的第二条线。</h2>
+   </div>
+   <div class="twocol" data-ink-id="ink-01a17816-cc01-7a29-bf6f-ccf558e130a3">
+    <div class="panel hot" data-ink-id="ink-01a17816-cc01-7b07-9c30-51281fa2a665">
+     <div class="p-label" data-ink-id="ink-01a17816-cc01-7358-a391-e50cf2a10e02">2024.03 — 2024.10 · 自媒体运营</div>
+     <h3 data-ink-id="ink-01a17816-cc01-746a-960a-75bf149aa77a">小红书账号 · 从 0 到 1 起号</h3>
+     <div class="when" data-ink-id="ink-01a17816-cc01-7b37-b8a7-9ac7f89f196a">选题 · 文案 · 脚本 · 拍摄 · 剪辑</div>
+     <ul data-ink-id="ink-01a17816-cc01-7613-b94c-37834575ef53">
+      <li data-ink-id="ink-01a17816-cc01-7f48-8c6d-c524feaa0d4a">独立完成账号定位、选题策划与竞品拆解</li>
+      <li data-ink-id="ink-01a17816-cc01-7b24-a6b2-49a5638ae155">负责文案、脚本、图片处理、拍摄与剪辑全流程</li>
+      <li data-ink-id="ink-01a17816-cc01-792a-9912-48005cb1f4a2">同期完成账号 1 涨粉 1w+ 的运营结果</li>
+     </ul>
+    </div>
+    <div class="panel" data-ink-id="ink-01a17816-cc01-7e3b-ac11-9d58ba1e7ec3">
+     <div class="p-label" data-ink-id="ink-01a17816-cc01-73d9-9184-69a16e95e2cb">2015.09 — 2019.07 · 景观设计师</div>
+     <h3 data-ink-id="ink-01a17816-cc01-7563-8f08-8ea384b6fbb0">河南尚兰园林景观设计有限公司</h3>
+     <div class="when" data-ink-id="ink-01a17816-cc01-7730-839c-bda4307f04ff">方案文本 · 专业转译</div>
+     <ul data-ink-id="ink-01a17816-cc01-71ff-bc7d-b0aefdc18594">
+      <li data-ink-id="ink-01a17816-cc01-7682-beae-9b2ab14d0bfd">按客户需求撰写设计方案与创意文案，输出项目文本与图纸</li>
+      <li data-ink-id="ink-01a17816-cc01-75dd-a8da-662fc04d5f70">负责项目全周期沟通对接与后期服务跟进</li>
+      <li data-ink-id="ink-01a17816-cc01-7f78-abe8-5bcd3cfb5014">整理项目资料，建立文档归档习惯</li>
+     </ul>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc01-7418-8aa5-50d3436087d8">
+    <span data-ink-id="ink-01a17816-cc01-7d10-81ad-52a1ff5fba54">Experience · 早期经历</span><span class="pageno" data-ink-id="ink-01a17816-cc01-71d8-a7bd-dbc03b891f4a"><b data-ink-id="ink-01a17816-cc01-7531-804f-b63ba5c04928">07</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide" data-ink-id="ink-01a17816-cc01-73d8-a3ad-f5542aca81bb">
+   <div class="crumb" data-ink-id="ink-01a17816-cc02-74ee-8f36-cce4f34d2721">
+    <span data-ink-id="ink-01a17816-cc02-7296-8674-fe7b040c3ad3">Resume</span><span data-ink-id="ink-01a17816-cc02-7b7d-89c3-6b1500be0ca5">Profile</span><span data-ink-id="ink-01a17816-cc02-7c38-84a9-9721c7d65c1e">Experience</span><span class="on" data-ink-id="ink-01a17816-cc02-7fe3-a08b-32371182bc52">Projects</span><span data-ink-id="ink-01a17816-cc02-7515-b1c6-0e3a697294bc">Skills</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc02-70b0-a9b5-43c631e9b8ce">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc02-7f6c-8306-dfe11fe02335">Project · 小红书账号运营 · 2024.03 — 2024.10</div>
+    <h2 data-ink-id="ink-01a17816-cc02-7ac5-9da2-98d7600b91ca">两个账号，
+     <br>
+     把方法论完整跑了一遍。</h2>
+   </div>
+   <div class="agenda" data-ink-id="ink-01a17816-cc02-78b9-8261-da66edda4bb3">
+    <div class="row" data-ink-id="ink-01a17816-cc02-73e4-a7ef-a03711efa13f">
+     <div class="no" data-ink-id="ink-01a17816-cc02-7fba-9fc4-902a599f3567">01</div>
+     <div class="t" data-ink-id="ink-01a17816-cc02-7d9c-a5c9-d8d4c71a0370">账号定位与竞品分析</div>
+     <div class="d" data-ink-id="ink-01a17816-cc02-7734-bdad-37449799afe2">定位</div>
+    </div>
+    <div class="row" data-ink-id="ink-01a17816-cc02-7caa-ba0e-44bc9069b7a2">
+     <div class="no" data-ink-id="ink-01a17816-cc02-76c0-bafc-0dd517cdbd97">02</div>
+     <div class="t" data-ink-id="ink-01a17816-cc02-73be-9eee-66208cb92b6d">内容创作：独立完成选题、图文与图片处理</div>
+     <div class="d" data-ink-id="ink-01a17816-cc02-7a76-84ff-5ca624e3d3be">170+ 篇</div>
+    </div>
+    <div class="row" data-ink-id="ink-01a17816-cc02-79a6-a68a-877eab14edf1">
+     <div class="no" data-ink-id="ink-01a17816-cc02-7f05-b878-a847b5415337">03</div>
+     <div class="t" data-ink-id="ink-01a17816-cc02-751c-83fa-c372a1525988">运营成果：账号 1 涨粉 1w+，账号 2 单篇最高 26w</div>
+     <div class="d" data-ink-id="ink-01a17816-cc02-707f-9982-4a831c2c1161">增长</div>
+    </div>
+    <div class="row" data-ink-id="ink-01a17816-cc02-75f7-b83f-6a5b58749f46">
+     <div class="no" data-ink-id="ink-01a17816-cc02-761b-a20a-656776113cee">04</div>
+     <div class="t" data-ink-id="ink-01a17816-cc02-75c7-92b5-c45e274b4011">线上话题策划与评论区互动维护</div>
+     <div class="d" data-ink-id="ink-01a17816-cc02-7430-9080-4913e275a0be">互动</div>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc02-7639-8e3f-3aacb8666443">
+    <span data-ink-id="ink-01a17816-cc02-7ae8-890c-e7df5fb66b02">Projects · 小红书账号运营</span><span class="pageno" data-ink-id="ink-01a17816-cc02-79de-a78d-b27a59189e55"><b data-ink-id="ink-01a17816-cc02-7bbd-af1b-82595026ea89">08</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide" data-ink-id="ink-01a17816-cc02-7633-9fa5-43c63407b7dd">
+   <div class="crumb" data-ink-id="ink-01a17816-cc02-7df8-98de-763d72002112">
+    <span data-ink-id="ink-01a17816-cc02-74a0-a6a1-7f2f621ec422">Resume</span><span class="on" data-ink-id="ink-01a17816-cc02-760e-ade4-b3e656da6282">Profile</span><span data-ink-id="ink-01a17816-cc02-7671-b192-e3444cfd16f1">Experience</span><span data-ink-id="ink-01a17816-cc02-76e2-9f0c-e709ae243f2a">Skills</span><span data-ink-id="ink-01a17816-cc02-7212-bc5f-3303d84e22e7">Contact</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc02-761e-a793-6312f477317a">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc02-74f7-a3e0-3a00cee323df">Education · 教育经历与个人信息</div>
+    <h2 data-ink-id="ink-01a17816-cc02-7f35-940a-86a7cf774743">艺术设计出身，
+     <br>
+     审美是长期资产。</h2>
+   </div>
+   <div class="twocol" data-ink-id="ink-01a17816-cc02-7c04-9266-82693ab6491c">
+    <div class="panel" data-ink-id="ink-01a17816-cc02-7b3a-b3ea-e4051facf79b">
+     <div class="p-label" data-ink-id="ink-01a17816-cc02-7f5d-a77d-b564bdd7cad9">Education · 教育经历</div>
+     <h3 data-ink-id="ink-01a17816-cc02-71eb-9b1f-44242e67d8e5">河南理工大学 · 本科</h3>
+     <div class="when" data-ink-id="ink-01a17816-cc02-735c-9238-0c06717365e1">2011 — 2015</div>
+     <ul data-ink-id="ink-01a17816-cc02-724a-809a-f0f5aa316918">
+      <li data-ink-id="ink-01a17816-cc02-7c79-944d-a5e614392da4">艺术设计专业，系统学习视觉与设计基础</li>
+      <li data-ink-id="ink-01a17816-cc02-79c6-a218-e507dc6783e5">设计与美术训练，构成后来排版与配色的底子</li>
+     </ul>
+    </div>
+    <div class="panel hot" data-ink-id="ink-01a17816-cc02-79cb-8112-203e77785b7e">
+     <div class="p-label" data-ink-id="ink-01a17816-cc02-7e3a-aaab-635c5c710ea8">Profile · 个人信息</div>
+     <h3 data-ink-id="ink-01a17816-cc02-70b7-b331-6cff46f0b1a8">求职意向：新媒体运营专员</h3>
+     <div class="when" data-ink-id="ink-01a17816-cc02-7cf2-af12-d766e1b0a0db">A · 女 · 34 岁</div>
+     <ul data-ink-id="ink-01a17816-cc02-7454-9d5c-9db3610b1486">
+      <li data-ink-id="ink-01a17816-cc02-7f76-91f9-f9ca709cb0c6">电话 / 微信 / 邮箱：面谈或投递时提供</li>
+      <li data-ink-id="ink-01a17816-cc02-7ab5-bc81-bb3421b25d54">工作地：上海</li>
+      <li data-ink-id="ink-01a17816-cc02-78af-bff4-6935c40d1a94">可独立承担公众号、小红书、视频号全流程</li>
+     </ul>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc02-75f3-ac03-8cf336c115fd">
+    <span data-ink-id="ink-01a17816-cc02-7ef2-894f-c70aede8f5a3">Profile · 教育与信息</span><span class="pageno" data-ink-id="ink-01a17816-cc02-722c-b304-bac452e16c7c"><b data-ink-id="ink-01a17816-cc02-7b99-99c0-8a4acd9aded2">09</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide" data-ink-id="ink-01a17816-cc02-7699-a249-0d98150ee173">
+   <div class="crumb" data-ink-id="ink-01a17816-cc02-7a3a-8da9-4bd68aea5aa8">
+    <span data-ink-id="ink-01a17816-cc02-7c29-8294-d064b7b49cca">Resume</span><span data-ink-id="ink-01a17816-cc02-7449-8b58-6cbbd7deb3f4">Profile</span><span data-ink-id="ink-01a17816-cc02-70ab-93a8-401cbbb2841f">Experience</span><span data-ink-id="ink-01a17816-cc02-7fc1-a4bf-7d6accc8fa11">Projects</span><span class="on" data-ink-id="ink-01a17816-cc02-7333-b72b-c0c4f14666e3">Skills</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc02-740b-8897-0c62912b285a">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc02-7db1-af69-ca32f5877fc0">Skills · 专业技能</div>
+    <h2 data-ink-id="ink-01a17816-cc02-7a69-a558-480cd34b20d5">五项能力，
+     <br>
+     对应五组可替换的作品图。</h2>
+    <p class="sub" data-ink-id="ink-01a17816-cc02-7ace-852b-4d844260949c">后续每页为一项技能的展示页，右侧为图片位，可直接替换为作品截图。</p>
+   </div>
+   <div class="agenda" data-ink-id="ink-01a17816-cc02-710c-aba0-d08f1926e1b5">
+    <div class="row" data-ink-id="ink-01a17816-cc02-7e63-b897-26fb400e6652">
+     <div class="no" data-ink-id="ink-01a17816-cc02-709a-b8c5-1946e89798c4">01</div>
+     <div class="t" data-ink-id="ink-01a17816-cc02-721d-8809-4f9126c8e643">文案写作：公文、新闻稿、专题文稿</div>
+     <div class="d" data-ink-id="ink-01a17816-cc02-71cf-8f26-a8104a7e6c32">稿样</div>
+    </div>
+    <div class="row" data-ink-id="ink-01a17816-cc02-701e-a8f1-ec5d1f2e0084">
+     <div class="no" data-ink-id="ink-01a17816-cc02-73b4-97eb-0359ba1021cc">02</div>
+     <div class="t" data-ink-id="ink-01a17816-cc02-7e8c-b8b7-27078c362b87">新媒体运营：公众号、小红书、视频号</div>
+     <div class="d" data-ink-id="ink-01a17816-cc02-7d59-80a5-8722c20434f9">数据</div>
+    </div>
+    <div class="row" data-ink-id="ink-01a17816-cc02-732d-b44d-af3ff55352cb">
+     <div class="no" data-ink-id="ink-01a17816-cc02-7c6f-9125-23761d1fabdb">03</div>
+     <div class="t" data-ink-id="ink-01a17816-cc02-7c65-b266-3b755f3a0615">设计剪辑：PS、InDesign、剪映、CAD</div>
+     <div class="d" data-ink-id="ink-01a17816-cc02-7bea-88ef-1cfa60c52000">视觉</div>
+    </div>
+    <div class="row" data-ink-id="ink-01a17816-cc02-75c1-9540-48f4f7ba55d8">
+     <div class="no" data-ink-id="ink-01a17816-cc02-711b-9d63-e06681a7c15f">04</div>
+     <div class="t" data-ink-id="ink-01a17816-cc02-7489-9e76-e50cfcc25384">办公工具：Word、Excel、PPT</div>
+     <div class="d" data-ink-id="ink-01a17816-cc02-741b-82b1-ba5629887274">模板</div>
+    </div>
+    <div class="row" data-ink-id="ink-01a17816-cc02-7161-9bf3-0a72e97cc76d">
+     <div class="no" data-ink-id="ink-01a17816-cc02-7d61-aaa7-3bfe4508ae2e">05</div>
+     <div class="t" data-ink-id="ink-01a17816-cc02-724a-984b-48fb0f5a7ab5">行业能力：协会、设计院、媒体生态</div>
+     <div class="d" data-ink-id="ink-01a17816-cc02-7c74-b2d5-a23cf46109b8">现场</div>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc02-7ff0-9a3e-8c6778c32121">
+    <span data-ink-id="ink-01a17816-cc02-7848-b922-6531487ef99d">Skills · 技能总览</span><span class="pageno" data-ink-id="ink-01a17816-cc02-7a0e-9e1e-3f0da26e2c8c"><b data-ink-id="ink-01a17816-cc02-7865-be28-d22f623359d1">10</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide skill-slide" data-ink-id="ink-01a17816-cc02-7184-acc3-4e95f2b0ffb3">
+   <div class="crumb" data-ink-id="ink-01a17816-cc02-7324-aa11-5b10ddbc0be5">
+    <span data-ink-id="ink-01a17816-cc02-72de-a536-92bf9f674878">Resume</span><span data-ink-id="ink-01a17816-cc02-7e09-abfd-8dd04b5851ff">Profile</span><span data-ink-id="ink-01a17816-cc02-75dc-a937-7a6fb921c573">Experience</span><span data-ink-id="ink-01a17816-cc02-7d85-957f-708fb8b7dc97">Projects</span><span class="on" data-ink-id="ink-01a17816-cc02-768d-840e-ff0c511658ad">Skills</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc02-7857-b603-2f0b7c0fbbef">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc02-759d-b8bb-323a30d68b83">Skill 01 · Writing</div>
+    <h2 data-ink-id="ink-01a17816-cc02-7f29-a5bc-609253b85e42">文案写作与校审</h2>
+   </div>
+   <div class="skill-body" data-ink-id="ink-01a17816-cc02-761d-a6a5-cbf0e25f2d69">
+    <div class="skill-text" data-ink-id="ink-01a17816-cc02-7324-89c6-e980e9026a57">
+     <p data-ink-id="ink-01a17816-cc02-77c4-b1e3-9f0f7dcf58a2">公文、新闻稿、宣传文案、会议纪要、专题文稿的撰写与校审——从一句话的标题到几千字的专题，都能落到结构上。</p>
+     <ul data-ink-id="ink-01a17816-cc02-7c82-8964-f915a1dbd79f">
+      <li data-ink-id="ink-01a17816-cc02-7a28-93bc-a403e3e892a9">品牌新闻稿、活动方案与总结汇报</li>
+      <li data-ink-id="ink-01a17816-cc02-704d-a0d2-9f2ae41e98bf">行业专题、项目案例与设计说明</li>
+      <li data-ink-id="ink-01a17816-cc02-7eaa-9e31-dfff689d5899">长文本逻辑梳理、校对与统一表述</li>
+     </ul>
+    </div>
+    <div class="imgslot" data-ink-id="ink-01a17816-cc02-74ef-9d86-d4a7c2524ff0">
+     <span class="corner" data-ink-id="ink-01a17816-cc02-78d4-920c-33d4ad776b3c"></span> <span class="tag" data-ink-id="ink-01a17816-cc02-7c64-8bb5-84f8e8d7ead0">Image placeholder · 01</span> <span class="hint" data-ink-id="ink-01a17816-cc02-7dd2-a1b4-485509fb536e">图片位 · 建议放公众号长图或文稿样张</span> <span class="frame" data-ink-id="ink-01a17816-cc02-7c69-b9b3-b2714db1a4b0">16 : 9 · 可直接替换</span>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc02-7f36-85a8-73ffdb615ae2">
+    <span data-ink-id="ink-01a17816-cc02-7441-bf1c-ec70a905e32c">Skills · 文案写作</span><span class="pageno" data-ink-id="ink-01a17816-cc02-74ba-be6a-67cb374e8de1"><b data-ink-id="ink-01a17816-cc02-7f4d-a07b-42dd10caa275">11</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide skill-slide" data-ink-id="ink-01a17816-cc02-7b4d-8974-23fa00693057">
+   <div class="crumb" data-ink-id="ink-01a17816-cc02-734a-886a-48c18cbd7e3e">
+    <span data-ink-id="ink-01a17816-cc02-7cfb-b272-7d3b0bf0fe69">Resume</span><span data-ink-id="ink-01a17816-cc02-7e69-abc2-426fa0e9c163">Profile</span><span data-ink-id="ink-01a17816-cc02-7c6e-957f-3a15ac9b7630">Experience</span><span data-ink-id="ink-01a17816-cc02-7d6e-9369-b2257dc4ecaa">Projects</span><span class="on" data-ink-id="ink-01a17816-cc02-76b2-926c-c32998b0f626">Skills</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc02-7914-aa20-f33e32cbdfd8">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc02-7fee-adfa-6a9d07ba06ac">Skill 02 · Social Media</div>
+    <h2 data-ink-id="ink-01a17816-cc02-755d-b86c-ca1ecc19f8ec">多平台内容运营</h2>
+   </div>
+   <div class="skill-body" data-ink-id="ink-01a17816-cc02-7b00-90f6-49076a66db4e">
+    <div class="skill-text" data-ink-id="ink-01a17816-cc02-7129-a429-06368739e6a1">
+     <p data-ink-id="ink-01a17816-cc02-77ff-ac54-6f803f717cef">公众号、小红书、视频号的内容策划、图文排版、用户运营与数据复盘，可独立完成从选题到迭代的全流程。</p>
+     <ul data-ink-id="ink-01a17816-cc02-7cc7-8b02-dd6dd6a8cf26">
+      <li data-ink-id="ink-01a17816-cc02-72dd-a4f1-fb30796a8d7b">选题策划、竞品拆解与关键词策略</li>
+      <li data-ink-id="ink-01a17816-cc02-77f7-904c-fab47e998c15">图文排版、短视频脚本与拍摄剪辑</li>
+      <li data-ink-id="ink-01a17816-cc02-7ee1-80ce-94b55899687c">后台数据复盘与内容策略迭代</li>
+     </ul>
+    </div>
+    <div class="imgslot" data-ink-id="ink-01a17816-cc02-7944-8eb7-33b073bffef6">
+     <span class="corner" data-ink-id="ink-01a17816-cc02-7492-a9a4-e13d088cbe1b"></span> <span class="tag" data-ink-id="ink-01a17816-cc02-770b-9618-8cd193d73514">Image placeholder · 02</span> <span class="hint" data-ink-id="ink-01a17816-cc02-7e43-a030-623e69c18001">图片位 · 建议放账号数据或笔记封面合集</span> <span class="frame" data-ink-id="ink-01a17816-cc02-7b09-8deb-3bd36ef7b933">16 : 9 · 可直接替换</span>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc02-7ad7-b44a-58ebf818e4f6">
+    <span data-ink-id="ink-01a17816-cc02-7de7-a8d6-527630b9b0d7">Skills · 新媒体运营</span><span class="pageno" data-ink-id="ink-01a17816-cc02-7303-96d9-3dd097504c9b"><b data-ink-id="ink-01a17816-cc02-71c7-9a9c-3409041e207f">12</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide skill-slide" data-ink-id="ink-01a17816-cc02-705d-9c50-49fc75c58274">
+   <div class="crumb" data-ink-id="ink-01a17816-cc02-72da-b69b-10edb159970f">
+    <span data-ink-id="ink-01a17816-cc02-7b0f-afdc-fc22a260363f">Resume</span><span data-ink-id="ink-01a17816-cc02-70f3-946c-97fb12207ab3">Profile</span><span data-ink-id="ink-01a17816-cc02-7522-b578-cd8eb55f8e86">Experience</span><span data-ink-id="ink-01a17816-cc02-7be2-a7f8-87a86621beec">Projects</span><span class="on" data-ink-id="ink-01a17816-cc02-78a4-a2d6-c6de840ad20c">Skills</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc02-7e58-a24b-0cbdf9f35442">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc02-783e-af27-46b80bf5e04e">Skill 03 · Visual</div>
+    <h2 data-ink-id="ink-01a17816-cc02-735e-b2e4-d213beb9e863">设计与剪辑</h2>
+   </div>
+   <div class="skill-body" data-ink-id="ink-01a17816-cc02-7e36-82c0-6f1511663a77">
+    <div class="skill-text" data-ink-id="ink-01a17816-cc02-7bbf-b6f1-96581ebc3e88">
+     <p data-ink-id="ink-01a17816-cc02-7586-8bfe-f0eb32f959cd">设计出身带来的视觉基础：软件只是工具，排版与配色是长期的肌肉记忆，也让我能和设计师顺畅对话。</p>
+     <ul data-ink-id="ink-01a17816-cc02-7823-a6be-d6127c02be5f">
+      <li data-ink-id="ink-01a17816-cc02-76b6-9be4-a916085b0a5e">PS / InDesign：海报、长图与画册排版</li>
+      <li data-ink-id="ink-01a17816-cc02-72b4-a992-c90afb82f4e6">剪映：短视频剪辑、字幕与节奏处理</li>
+      <li data-ink-id="ink-01a17816-cc02-75ac-b334-a1cdbe94ee07">CAD / SU / Lumion：看得懂图纸与方案</li>
+     </ul>
+    </div>
+    <div class="imgslot" data-ink-id="ink-01a17816-cc02-727b-854c-1ab82ad61420">
+     <span class="corner" data-ink-id="ink-01a17816-cc02-733f-904a-3540f80eb0f8"></span> <span class="tag" data-ink-id="ink-01a17816-cc02-781e-8782-2bfd8a93d160">Image placeholder · 03</span> <span class="hint" data-ink-id="ink-01a17816-cc02-75d3-bc0c-45b3f590d6df">图片位 · 建议放海报或长图设计稿</span> <span class="frame" data-ink-id="ink-01a17816-cc02-77ca-ad21-4f1262eb48a1">16 : 9 · 可直接替换</span>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc02-74a3-9980-cc6a188e279e">
+    <span data-ink-id="ink-01a17816-cc02-7957-9660-222a2a3d98d1">Skills · 设计与剪辑</span><span class="pageno" data-ink-id="ink-01a17816-cc02-7e5d-8ac6-b9dc1e7f29c7"><b data-ink-id="ink-01a17816-cc02-78bf-b44b-d605be1eb189">13</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide skill-slide" data-ink-id="ink-01a17816-cc02-7e9a-850d-e6154f0e2417">
+   <div class="crumb" data-ink-id="ink-01a17816-cc02-7c24-9313-2cec6f2325fe">
+    <span data-ink-id="ink-01a17816-cc02-7a1b-9a92-e231f59a22c1">Resume</span><span data-ink-id="ink-01a17816-cc02-724b-8c26-7842190ff1cb">Profile</span><span data-ink-id="ink-01a17816-cc02-7300-bacd-79ec9f51ef72">Experience</span><span data-ink-id="ink-01a17816-cc02-72d1-8b9b-c03b3111d497">Projects</span><span class="on" data-ink-id="ink-01a17816-cc02-7ad1-864e-43e4e8c4f63a">Skills</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc02-7230-bbc0-285a7de87659">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc02-7603-bb58-94c971dcb5dc">Skill 04 · Operations</div>
+    <h2 data-ink-id="ink-01a17816-cc02-70fe-9541-73cef7d0fac8">办公工具与资料管理</h2>
+   </div>
+   <div class="skill-body" data-ink-id="ink-01a17816-cc02-7ba6-a349-db9e373e477b">
+    <div class="skill-text" data-ink-id="ink-01a17816-cc02-7d20-a237-bfd227c04b05">
+     <p data-ink-id="ink-01a17816-cc02-7b40-95fe-fd26538d27f0">把琐碎的事做得可查、可交、可复用：台账、归档、流程与汇报材料，是我在跨部门协作里最常被信任的部分。</p>
+     <ul data-ink-id="ink-01a17816-cc02-7991-b89c-d0275a386d2e">
+      <li data-ink-id="ink-01a17816-cc02-7bde-b9bc-da29a5de4774">Word / Excel：台账、清单与资料归档</li>
+      <li data-ink-id="ink-01a17816-cc02-78d4-a334-982887d073cd">PPT：方案汇报与活动提案</li>
+      <li data-ink-id="ink-01a17816-cc02-787c-8694-4ef940caec5f">会务统筹、流程 SOP 与资料维护</li>
+     </ul>
+    </div>
+    <div class="imgslot" data-ink-id="ink-01a17816-cc02-78c4-a92b-7a234f8d6eff">
+     <span class="corner" data-ink-id="ink-01a17816-cc02-7406-9006-d602c806e506"></span> <span class="tag" data-ink-id="ink-01a17816-cc02-7eea-aebc-ec66963a7b08">Image placeholder · 04</span> <span class="hint" data-ink-id="ink-01a17816-cc02-717e-8ca2-bd574861ca30">图片位 · 建议放汇报 PPT 或台账模板</span> <span class="frame" data-ink-id="ink-01a17816-cc02-79a5-9522-25b37d50acb2">16 : 9 · 可直接替换</span>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc02-7d11-b835-b2c7e4ce9a47">
+    <span data-ink-id="ink-01a17816-cc02-7030-bd92-d8706e7dfd05">Skills · 办公工具</span><span class="pageno" data-ink-id="ink-01a17816-cc02-7729-83b2-317cbe10ffc7"><b data-ink-id="ink-01a17816-cc02-7418-84ab-b68b4f7e6383">14</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide skill-slide" data-ink-id="ink-01a17816-cc02-7385-9c74-ce6ef9702d7d">
+   <div class="crumb" data-ink-id="ink-01a17816-cc02-70dd-84d5-1c749f4ec100">
+    <span data-ink-id="ink-01a17816-cc02-7e16-92d2-d9e8c14f25c2">Resume</span><span data-ink-id="ink-01a17816-cc02-7ce1-bf27-22e6743cc30e">Profile</span><span data-ink-id="ink-01a17816-cc02-7501-86ec-a1dc8810f9b9">Experience</span><span data-ink-id="ink-01a17816-cc02-76d0-bef0-93853c4026fe">Projects</span><span class="on" data-ink-id="ink-01a17816-cc02-7536-a5e4-eb523e0c5ead">Skills</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc02-7194-a4cc-956c22d18da0">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc02-78e9-a255-3b75771d1314">Skill 05 · Industry</div>
+    <h2 data-ink-id="ink-01a17816-cc02-77ca-b93d-66f3613dcd75">行业资源与协同</h2>
+   </div>
+   <div class="skill-body" data-ink-id="ink-01a17816-cc02-73f4-9308-3b0a8f685013">
+    <div class="skill-text" data-ink-id="ink-01a17816-cc02-7ad4-b50c-79cf41122e7a">
+     <p data-ink-id="ink-01a17816-cc02-79e4-a641-767dacebb405">11 年建筑行业的积累，是沟通成本最低的那部分——知道该找谁、该怎么说、事情该走到哪一步。</p>
+     <ul data-ink-id="ink-01a17816-cc02-72b2-815d-cdd345079ac4">
+      <li data-ink-id="ink-01a17816-cc02-7f76-9b1f-f2f35832e63b">熟悉建筑行业协会、设计院与行业媒体生态</li>
+      <li data-ink-id="ink-01a17816-cc02-72a5-b61b-172ca37a61e7">奖项申报、直播访谈与专题沙龙落地</li>
+      <li data-ink-id="ink-01a17816-cc02-760b-b6e0-2126e4ae88a4">跨部门、跨主体的多方协同与现场统筹</li>
+     </ul>
+    </div>
+    <div class="imgslot" data-ink-id="ink-01a17816-cc02-7305-9177-9a2f7872c7d8">
+     <span class="corner" data-ink-id="ink-01a17816-cc02-7061-9268-583e443a8ad2"></span> <span class="tag" data-ink-id="ink-01a17816-cc02-74f2-aa54-47239de1ddb8">Image placeholder · 05</span> <span class="hint" data-ink-id="ink-01a17816-cc02-722b-8f5f-fe52793475ce">图片位 · 建议放活动现场或沙龙照片</span> <span class="frame" data-ink-id="ink-01a17816-cc02-7006-b7b2-2b566fc5f7ea">16 : 9 · 可直接替换</span>
+    </div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc02-7b0a-ba62-c30424abaf20">
+    <span data-ink-id="ink-01a17816-cc02-71f1-b887-2b03d5aef723">Skills · 行业能力</span><span class="pageno" data-ink-id="ink-01a17816-cc02-7f8e-98e7-ca2649149440"><b data-ink-id="ink-01a17816-cc02-7527-9d69-d80a448abb11">15</b> / 16</span>
+   </div>
+  </section>
+  <section class="slide end-slide" data-ink-id="ink-01a17816-cc02-7402-a31c-46dce68d783b">
+   <div class="crumb" data-ink-id="ink-01a17816-cc02-7ff5-a781-79a2f37f7e06">
+    <span data-ink-id="ink-01a17816-cc02-72b3-a131-4f5cb072298b">Resume</span><span data-ink-id="ink-01a17816-cc02-770f-8f14-3bdd1c077d5b">Profile</span><span data-ink-id="ink-01a17816-cc02-7a26-bd7f-828aa53ba527">Experience</span><span data-ink-id="ink-01a17816-cc02-76c4-8ed7-b604a4f5b252">Projects</span><span class="on" data-ink-id="ink-01a17816-cc02-7c56-a11b-55f750e433ee">Contact</span>
+   </div>
+   <div data-ink-id="ink-01a17816-cc02-764c-8ab2-a32fdc03e2e0">
+    <div class="eyebrow" data-ink-id="ink-01a17816-cc02-73a5-aab8-2466d336bf4a">Contact · 期待合作</div>
+    <h2 data-ink-id="ink-01a17816-cc02-7543-a7fc-5ef2dc1b40b6">让专业的事，
+     <br>
+     <span class="out" data-ink-id="ink-01a17816-cc02-7cc7-8bc5-ec56b7a86e5e">被更多人看见。</span></h2>
+   </div>
+   <div class="contact" data-ink-id="ink-01a17816-cc02-7f43-b9dc-ca3cdfdf8e52">
+    <div class="chip hot" data-ink-id="ink-01a17816-cc02-7348-990b-666266c60857">求职意向 · 新媒体运营专员</div>
+    <div class="chip" data-ink-id="ink-01a17816-cc02-7394-bf88-5a9d4c2572c5">电话 / 微信 / 邮箱：面谈或投递时提供</div>
+    <div class="chip" data-ink-id="ink-01a17816-cc02-79b2-910b-9f873a8b4d7d">A · 女 · 34 岁 · 上海</div>
+   </div>
+   <div class="slide-meta" data-ink-id="ink-01a17816-cc02-74b5-ae0b-66f8ebbb1184">
+    <span data-ink-id="ink-01a17816-cc02-79d1-ad2d-471a80e84ac9">Contact · 联系方式</span><span class="pageno" data-ink-id="ink-01a17816-cc02-7546-b5e9-ee1bc4975977"><b data-ink-id="ink-01a17816-cc02-7801-8d66-67c96bbcee44">16</b> / 16</span>
+   </div>
+  </section>
+ </div>
+</div></body></html>
